@@ -148,6 +148,14 @@ The Streamlit UI is designed for demos and stakeholder reviews. It exposes the f
 
 ![Google Agent SDK UI snapshot](docs/images/ui-snapshot.png)
 
+### Traces Tab Snapshot
+
+![Google Agent SDK traces tab](docs/images/ui-traces-snapshot.png)
+
+### Evals Tab Snapshot
+
+![Google Agent SDK evals tab](docs/images/ui-evals-snapshot.png)
+
 ### What each tab demonstrates
 
 - **RAG**: interactive customer query workflow with `customer_id`, retrieval depth (`top_k`), grounded answer, retrieved context, and trace metadata
