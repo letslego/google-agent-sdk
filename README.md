@@ -1,4 +1,4 @@
-# Google ADK Enterprise RAG Pipeline
+# Google Agent SDK
 
 A production-style **Retrieval-Augmented Generation (RAG)** starter project that demonstrates how to use **Google ADK** to answer customer questions from both:
 
@@ -34,7 +34,7 @@ When a customer asks a question, the system:
 ## Repository Layout
 
 ```text
-google-adk-enterprise-rag/
+google-agent-sdk/
 ├── data/samples/
 │   ├── structured/            # CSV enterprise records
 │   └── unstructured/          # Policies / KB text
@@ -144,13 +144,13 @@ From this project root:
 git init
 git add .
 git commit -m "Initial commit: enterprise RAG pipeline with Google ADK"
-gh repo create google-adk-enterprise-rag --public --source=. --remote=origin --push
+gh repo create google-agent-sdk --public --source=. --remote=origin --push
 ```
 
 If you prefer private visibility:
 
 ```bash
-gh repo create google-adk-enterprise-rag --private --source=. --remote=origin --push
+gh repo create google-agent-sdk --private --source=. --remote=origin --push
 ```
 
 ## Why This Is Useful for Customer Query Answering

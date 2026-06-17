@@ -1,5 +1,5 @@
 [project]
-name = "google-adk-enterprise-rag"
+name = "google-agent-sdk"
 version = "0.1.0"
 description = "Enterprise RAG pipeline demo using Google ADK for customer query answering."
 readme = "README.md"
