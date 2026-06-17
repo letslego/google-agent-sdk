@@ -9,6 +9,13 @@ This repository is designed for customer support and customer success scenarios 
 
 Repository: [https://github.com/letslego/google-agent-sdk](https://github.com/letslego/google-agent-sdk)
 
+## Latest Updates
+
+- Added enterprise warehouse ingestion via a configurable BigQuery connector.
+- Added optional Vertex AI embedding-based reranking for improved relevance ordering.
+- Added groundedness evaluation with pass/fail checks and JSON report output.
+- Expanded UI showcase with live screenshots for RAG, Traces, and Evals tabs.
+
 ## What This RAG Pipeline Does
 
 When a customer asks a question, the system:
