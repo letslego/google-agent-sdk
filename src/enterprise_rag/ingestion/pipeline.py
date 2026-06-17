@@ -1,4 +1,5 @@
 from enterprise_rag.config import settings
+from enterprise_rag.connectors.bigquery_loader import load_bigquery_documents
 from enterprise_rag.connectors.structured_loader import load_structured_documents
 from enterprise_rag.connectors.unstructured_loader import load_unstructured_documents
 from enterprise_rag.models import Document, RetrievalResult
@@ -18,7 +19,21 @@ class EnterpriseRAGPipeline:
     def ingest(self) -> int:
         structured_docs = load_structured_documents(settings.structured_data_dir)
         unstructured_docs = load_unstructured_documents(settings.unstructured_data_dir)
-        all_docs = structured_docs + unstructured_docs
+        bigquery_docs: list[Document] = []
+        if settings.enable_bigquery_ingestion:
+            tables = [t.strip() for t in settings.bigquery_tables.split(",") if t.strip()]
+            try:
+                bigquery_docs = load_bigquery_documents(
+                    project_id=settings.gcp_project_id,
+                    dataset=settings.bigquery_dataset,
+                    tables=tables,
+                    limit_per_table=settings.bigquery_limit_per_table,
+                )
+            except Exception:
+                # Keep local demos healthy even when BigQuery is not configured.
+                bigquery_docs = []
+
+        all_docs = structured_docs + unstructured_docs + bigquery_docs
 
         if settings.enable_vector_search:
             try:

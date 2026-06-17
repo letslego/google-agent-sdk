@@ -28,10 +28,13 @@ When a customer asks a question, the system:
 - Chunking strategy for long unstructured documents
 - Metadata-aware filtering (`customer_id`-scoped retrieval)
 - Hybrid retrieval (semantic + lexical fusion)
+- BigQuery connector for enterprise warehouse ingestion
+- Optional Vertex AI embedding-based reranking
 - Skills registry search for intent-to-playbook matching (`search_skill_registry`)
 - Explicit skill execution for response workflow control (`use_skill`)
 - ADK tool-based grounding pattern (`retrieve_enterprise_context`)
 - Web UI with tabs for RAG, traces, and evals
+- Groundedness evaluation script with pass/fail checks
 - FastAPI retrieval endpoint for service integration
 - Sample datasets for immediate local demo
 - Architecture documentation and Makefile automation
@@ -46,12 +49,13 @@ google-agent-sdk/
 ├── docs/
 │   └── architecture.md
 ├── scripts/
-│   └── ingest.py
+│   ├── ingest.py
+│   └── evaluate_groundedness.py
 ├── src/enterprise_rag/
 │   ├── adk_agent/agent.py     # Google ADK root agent + tool
 │   ├── connectors/            # Structured/unstructured loaders
 │   ├── ingestion/pipeline.py  # End-to-end ingest + retrieve
-│   ├── retrieval/             # Vector + hybrid retrieval logic
+│   ├── retrieval/             # Vector + hybrid + Vertex rerank logic
 │   └── app.py                 # FastAPI service
 ├── .env.example
 ├── Makefile
@@ -81,6 +85,15 @@ Set your `GOOGLE_API_KEY` in `.env`.
 
 ```bash
 make ingest
+```
+
+Optional BigQuery ingestion (set in `.env` before ingestion):
+
+```bash
+RAG_ENABLE_BIGQUERY_INGESTION=true
+GCP_PROJECT_ID=your-project-id
+BIGQUERY_DATASET=support_analytics
+BIGQUERY_TABLES=tickets,accounts,billing_events
 ```
 
 ### 4) Run the ADK agent
@@ -121,6 +134,14 @@ make run-ui
 
 Then open the Streamlit URL shown in your terminal (typically `http://localhost:8501`).
 
+### 7) Run groundedness evaluation (pass/fail)
+
+```bash
+make eval-groundedness
+```
+
+Results are written to `logs/groundedness_eval_results.json`.
+
 ## UI Showcase
 
 The Streamlit UI is designed for demos and stakeholder reviews. It exposes the full RAG loop and makes traces/evals easy to inspect without using raw API calls.
@@ -145,6 +166,50 @@ The Streamlit UI is designed for demos and stakeholder reviews. It exposes the f
 - If the default URL is busy, Streamlit auto-selects the next port (`8502`, `8503`, ...).
 - If the page looks stale, hard refresh (`Cmd+Shift+R`).
 - For local demo stability, lexical retrieval is enabled by default; set `RAG_ENABLE_VECTOR_SEARCH=true` in `.env` to enable vector retrieval.
+- To enable Vertex reranking, set `RAG_ENABLE_VERTEX_RERANK=true` and configure `GCP_PROJECT_ID`.
+
+## BigQuery Connector
+
+The ingestion pipeline supports warehouse ingestion via BigQuery when enabled.
+
+- Connector module: `src/enterprise_rag/connectors/bigquery_loader.py`
+- Source URI metadata format: `bigquery://<project>.<dataset>.<table>`
+- Customer-aware metadata: if a `customer_id` column exists, it is mapped into retrieval filters
+
+Required environment settings:
+
+```bash
+RAG_ENABLE_BIGQUERY_INGESTION=true
+GCP_PROJECT_ID=your-project-id
+BIGQUERY_DATASET=your_dataset
+BIGQUERY_TABLES=tickets,accounts
+BIGQUERY_LIMIT_PER_TABLE=500
+```
+
+## Vertex AI Reranking
+
+Optional reranking can be enabled to rescore retrieved candidates with Vertex embeddings:
+
+```bash
+RAG_ENABLE_VERTEX_RERANK=true
+GCP_PROJECT_ID=your-project-id
+GCP_LOCATION=us-central1
+VERTEX_EMBEDDING_MODEL=text-embedding-005
+```
+
+When enabled, the retriever keeps hybrid retrieval as first-pass recall, then reranks top candidates for better ordering relevance.
+
+## Groundedness Evaluation Script
+
+`scripts/evaluate_groundedness.py` runs evaluation cases and computes groundedness pass/fail by checking whether answer claims are supported by retrieved context.
+
+Output includes:
+
+- per-case groundedness score
+- pass/fail status
+- selected skill and trace id
+- latency per case
+- global pass rate summary
 
 ## Example Customer Queries
 
@@ -229,6 +294,6 @@ This pipeline combines enterprise tabular truth with policy and KB narrative con
 
 If you want, I can next add:
 
-- a BigQuery connector,
-- reranking with Vertex AI embeddings/ranker,
-- and an evaluation script with pass/fail groundedness checks.
+- BigQuery partition filters and incremental ingestion checkpoints
+- Vertex cross-encoder reranking with calibrated relevance thresholds
+- CI automation to fail PRs when groundedness pass rate drops

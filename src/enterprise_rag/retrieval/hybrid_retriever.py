@@ -3,6 +3,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
+from enterprise_rag.config import settings
 from enterprise_rag.models import Document, RetrievalResult
 from enterprise_rag.retrieval.vector_store import VectorStore
 
@@ -14,6 +15,26 @@ class HybridRetriever:
         self.lexical_documents: list[Document] = []
         self.vectorizer = TfidfVectorizer(stop_words="english")
         self.document_matrix = None
+        self._vertex_reranker = None
+
+    def _get_vertex_reranker(self):
+        if not settings.enable_vertex_rerank:
+            return None
+        if self._vertex_reranker is not None:
+            return self._vertex_reranker
+        if not settings.gcp_project_id:
+            return None
+        try:
+            from enterprise_rag.retrieval.vertex_reranker import VertexReranker
+
+            self._vertex_reranker = VertexReranker(
+                project_id=settings.gcp_project_id,
+                location=settings.gcp_location,
+                model_name=settings.vertex_embedding_model,
+            )
+        except Exception:
+            self._vertex_reranker = None
+        return self._vertex_reranker
 
     def build_lexical_index(self, documents: list[Document]) -> None:
         self.lexical_documents = documents
@@ -71,7 +92,7 @@ class HybridRetriever:
                 result_map[result.document.id] = result
 
         ranked = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        return [
+        base_results = [
             RetrievalResult(
                 document=result_map[doc_id].document,
                 score=score,
@@ -79,4 +100,11 @@ class HybridRetriever:
             )
             for doc_id, score in ranked
         ]
+        reranker = self._get_vertex_reranker()
+        if reranker is None:
+            return base_results
+        try:
+            return reranker.rerank(query=query_text, candidates=base_results, top_k=top_k)
+        except Exception:
+            return base_results
 

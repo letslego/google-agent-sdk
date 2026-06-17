@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: venv install ingest run-api run-adk run-ui lint test
+.PHONY: venv install ingest eval-groundedness run-api run-adk run-ui lint test
 
 venv:
 	$(PYTHON) -m venv .venv
@@ -10,6 +10,9 @@ install:
 
 ingest:
 	. .venv/bin/activate && python scripts/ingest.py
+
+eval-groundedness:
+	. .venv/bin/activate && python scripts/evaluate_groundedness.py
 
 run-api:
 	. .venv/bin/activate && uvicorn enterprise_rag.app:app --reload
