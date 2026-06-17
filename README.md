@@ -7,6 +7,8 @@ A production-style **Retrieval-Augmented Generation (RAG)** starter project that
 
 This repository is designed for customer support and customer success scenarios where responses must be grounded in enterprise truth and include source-backed context.
 
+Repository: [https://github.com/letslego/google-agent-sdk](https://github.com/letslego/google-agent-sdk)
+
 ## What This RAG Pipeline Does
 
 When a customer asks a question, the system:
@@ -26,6 +28,8 @@ When a customer asks a question, the system:
 - Chunking strategy for long unstructured documents
 - Metadata-aware filtering (`customer_id`-scoped retrieval)
 - Hybrid retrieval (semantic + lexical fusion)
+- Skills registry search for intent-to-playbook matching (`search_skill_registry`)
+- Explicit skill execution for response workflow control (`use_skill`)
 - ADK tool-based grounding pattern (`retrieve_enterprise_context`)
 - FastAPI retrieval endpoint for service integration
 - Sample datasets for immediate local demo
@@ -114,6 +118,31 @@ curl -X POST http://127.0.0.1:8000/retrieve \
 - "For customer C1002, what is the current ticket status and likely billing reconciliation steps?"
 - "For Nimbus Logistics webhook retries, what mitigation guidance is documented?"
 
+## Skills Registry + Tool Calling Demo
+
+This project now demonstrates a complete ADK tool-calling loop:
+
+1. **Skill search tool call**: `search_skill_registry(query="...")`
+2. **Skill use tool call**: `use_skill(skill_id="...")`
+3. **Grounding tool call**: `retrieve_enterprise_context(query="...", customer_id="...")`
+4. **Final answer**: combines skill playbook + retrieved enterprise evidence
+
+### Included skills
+
+- `sla_incident_response` for high-priority API/SLA incidents
+- `billing_reconciliation` for invoice and usage mismatch workflows
+- `webhook_recovery` for callback delivery/retry failures
+
+### Example tool-calling trace (conceptual)
+
+```text
+User: "Acme says their Claim API latency violates SLA. What do we do?"
+Tool -> search_skill_registry("claim api latency SLA") => sla_incident_response
+Tool -> use_skill("sla_incident_response") => incident response playbook
+Tool -> retrieve_enterprise_context(query, customer_id="C1001") => ticket + policy context
+Agent: grounded answer with [1], [2] citations and concrete next actions
+```
+
 ## Extending to Real Enterprise Data
 
 Replace sample loaders with connectors to:
@@ -160,6 +189,7 @@ This pipeline combines enterprise tabular truth with policy and KB narrative con
 - Better factual grounding
 - Better handling of account-specific context
 - Better explainability via source-backed responses
+- Consistent operations using skill playbooks selected through tool calls
 
 ---
 
