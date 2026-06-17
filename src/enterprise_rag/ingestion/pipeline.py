@@ -9,7 +9,10 @@ from enterprise_rag.retrieval.vector_store import VectorStore
 class EnterpriseRAGPipeline:
     def __init__(self):
         self.vector_store = VectorStore(settings.vector_db_path)
-        self.retriever = HybridRetriever(self.vector_store)
+        self.retriever = HybridRetriever(
+            self.vector_store,
+            enable_vector_search=settings.enable_vector_search,
+        )
         self._documents: list[Document] = []
 
     def ingest(self) -> int:
@@ -17,7 +20,12 @@ class EnterpriseRAGPipeline:
         unstructured_docs = load_unstructured_documents(settings.unstructured_data_dir)
         all_docs = structured_docs + unstructured_docs
 
-        self.vector_store.upsert(all_docs)
+        if settings.enable_vector_search:
+            try:
+                self.vector_store.upsert(all_docs)
+            except Exception:
+                # Fallback mode keeps lexical retrieval available for local demos.
+                pass
         self.retriever.build_lexical_index(all_docs)
         self._documents = all_docs
         return len(all_docs)

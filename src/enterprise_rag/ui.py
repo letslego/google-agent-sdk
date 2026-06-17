@@ -18,7 +18,6 @@ def get_service() -> RAGService:
     return RAGService()
 
 
-service = get_service()
 tab_rag, tab_traces, tab_evals = st.tabs(["RAG", "Traces", "Evals"])
 
 with tab_rag:
@@ -33,11 +32,13 @@ with tab_rag:
     top_k = col2.slider("Top K retrieval", min_value=1, max_value=10, value=5)
 
     if st.button("Run RAG Query", type="primary"):
-        response = service.answer_query(
+        with st.spinner("Running retrieval, skill routing, and answer synthesis..."):
+            service = get_service()
+            response = service.answer_query(
             query=query,
             customer_id=customer_id or None,
             top_k=top_k,
-        )
+            )
         st.markdown("### Grounded Answer")
         st.write(response.answer)
         with st.expander("Retrieved Context"):
@@ -78,7 +79,9 @@ with tab_evals:
     st.subheader("Evaluation suite")
     st.caption("Runs sample benchmark queries and scores keyword coverage from grounded answers.")
     if st.button("Run Evals"):
-        results = run_eval_suite(service)
+        with st.spinner("Executing eval suite..."):
+            service = get_service()
+            results = run_eval_suite(service)
         if not results:
             st.warning("No eval cases found. Add cases to data/evals/eval_cases.json.")
         else:

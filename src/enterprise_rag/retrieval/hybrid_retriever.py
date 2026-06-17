@@ -8,8 +8,9 @@ from enterprise_rag.retrieval.vector_store import VectorStore
 
 
 class HybridRetriever:
-    def __init__(self, vector_store: VectorStore):
+    def __init__(self, vector_store: VectorStore, enable_vector_search: bool = False):
         self.vector_store = vector_store
+        self.enable_vector_search = enable_vector_search
         self.lexical_documents: list[Document] = []
         self.vectorizer = TfidfVectorizer(stop_words="english")
         self.document_matrix = None
@@ -43,11 +44,17 @@ class HybridRetriever:
         customer_id: str | None = None,
     ) -> list[RetrievalResult]:
         metadata_filter = {"customer_id": str(customer_id)} if customer_id else None
-        vector_results = self.vector_store.query(
-            query_text=query_text,
-            top_k=top_k * 2,
-            metadata_filter=metadata_filter,
-        )
+        vector_results: list[RetrievalResult] = []
+        if self.enable_vector_search:
+            try:
+                vector_results = self.vector_store.query(
+                    query_text=query_text,
+                    top_k=top_k * 2,
+                    metadata_filter=metadata_filter,
+                )
+            except Exception:
+                # Keep the app responsive even if vector embedding backend is unavailable.
+                vector_results = []
         lexical_results = self._lexical_query(query_text=query_text, top_k=top_k * 2)
 
         # Reciprocal rank fusion for robust hybrid ranking.

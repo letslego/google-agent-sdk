@@ -121,6 +121,31 @@ make run-ui
 
 Then open the Streamlit URL shown in your terminal (typically `http://localhost:8501`).
 
+## UI Showcase
+
+The Streamlit UI is designed for demos and stakeholder reviews. It exposes the full RAG loop and makes traces/evals easy to inspect without using raw API calls.
+
+![Google Agent SDK UI snapshot](docs/images/ui-snapshot.png)
+
+### What each tab demonstrates
+
+- **RAG**: interactive customer query workflow with `customer_id`, retrieval depth (`top_k`), grounded answer, retrieved context, and trace metadata
+- **Traces**: execution transparency for each run (selected skill, tool-call steps, latency, and retrieved evidence sources)
+- **Evals**: one-click benchmark run from `data/evals/eval_cases.json` with pass/fail, keyword hit rate, and latency KPIs
+
+### Suggested demo flow (3 minutes)
+
+1. In **RAG**, run: `Acme says Claim API latency violates SLA. What should support do?`
+2. Open **Retrieved Context** and **Trace Metadata** to show grounding + tool steps.
+3. Switch to **Traces** and inspect the latest `trace_id`.
+4. Run **Evals** and present pass rate + average latency.
+
+### UI troubleshooting
+
+- If the default URL is busy, Streamlit auto-selects the next port (`8502`, `8503`, ...).
+- If the page looks stale, hard refresh (`Cmd+Shift+R`).
+- For local demo stability, lexical retrieval is enabled by default; set `RAG_ENABLE_VECTOR_SEARCH=true` in `.env` to enable vector retrieval.
+
 ## Example Customer Queries
 
 - "My Claim API is slow for Acme Health. What support policy applies and what are the required update intervals?"
@@ -151,12 +176,6 @@ Tool -> use_skill("sla_incident_response") => incident response playbook
 Tool -> retrieve_enterprise_context(query, customer_id="C1001") => ticket + policy context
 Agent: grounded answer with [1], [2] citations and concrete next actions
 ```
-
-## UI Tabs
-
-- **RAG**: submit a customer query, view grounded answer, retrieved context, and trace payload
-- **Traces**: inspect recent end-to-end execution traces (skill selected, steps, latency, sources)
-- **Evals**: run benchmark cases from `data/evals/eval_cases.json` and view pass rate/latency
 
 ## Extending to Real Enterprise Data
 
