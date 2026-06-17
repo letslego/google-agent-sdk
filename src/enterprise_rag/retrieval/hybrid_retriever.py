@@ -1,0 +1,75 @@
+from collections import defaultdict
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+from enterprise_rag.models import Document, RetrievalResult
+from enterprise_rag.retrieval.vector_store import VectorStore
+
+
+class HybridRetriever:
+    def __init__(self, vector_store: VectorStore):
+        self.vector_store = vector_store
+        self.lexical_documents: list[Document] = []
+        self.vectorizer = TfidfVectorizer(stop_words="english")
+        self.document_matrix = None
+
+    def build_lexical_index(self, documents: list[Document]) -> None:
+        self.lexical_documents = documents
+        corpus = [d.text for d in documents] or [""]
+        self.document_matrix = self.vectorizer.fit_transform(corpus)
+
+    def _lexical_query(self, query_text: str, top_k: int = 5) -> list[RetrievalResult]:
+        if not self.lexical_documents or self.document_matrix is None:
+            return []
+        query_vec = self.vectorizer.transform([query_text])
+        scores = cosine_similarity(query_vec, self.document_matrix).flatten()
+        ranked_idx = np.argsort(scores)[::-1][:top_k]
+
+        return [
+            RetrievalResult(
+                document=self.lexical_documents[i],
+                score=float(scores[i]),
+                source="lexical",
+            )
+            for i in ranked_idx
+            if scores[i] > 0
+        ]
+
+    def search(
+        self,
+        query_text: str,
+        top_k: int = 5,
+        customer_id: str | None = None,
+    ) -> list[RetrievalResult]:
+        metadata_filter = {"customer_id": str(customer_id)} if customer_id else None
+        vector_results = self.vector_store.query(
+            query_text=query_text,
+            top_k=top_k * 2,
+            metadata_filter=metadata_filter,
+        )
+        lexical_results = self._lexical_query(query_text=query_text, top_k=top_k * 2)
+
+        # Reciprocal rank fusion for robust hybrid ranking.
+        combined_scores = defaultdict(float)
+        result_map: dict[str, RetrievalResult] = {}
+
+        for rank, result in enumerate(vector_results, start=1):
+            combined_scores[result.document.id] += 1.0 / (60 + rank)
+            result_map[result.document.id] = result
+
+        for rank, result in enumerate(lexical_results, start=1):
+            combined_scores[result.document.id] += 1.0 / (60 + rank)
+            if result.document.id not in result_map:
+                result_map[result.document.id] = result
+
+        ranked = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+        return [
+            RetrievalResult(
+                document=result_map[doc_id].document,
+                score=score,
+                source="hybrid",
+            )
+            for doc_id, score in ranked
+        ]
+

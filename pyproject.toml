@@ -1,0 +1,35 @@
+[project]
+name = "google-adk-enterprise-rag"
+version = "0.1.0"
+description = "Enterprise RAG pipeline demo using Google ADK for customer query answering."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "google-adk",
+  "chromadb",
+  "pandas",
+  "duckdb",
+  "pydantic",
+  "python-dotenv",
+  "scikit-learn",
+  "fastapi",
+  "uvicorn",
+  "pypdf",
+  "python-docx",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

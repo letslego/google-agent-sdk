@@ -1,0 +1,4 @@
+ticket_id,customer_id,priority,issue,status,last_update
+T-901,C1001,high,Claim API latency above SLA,open,2026-06-11
+T-902,C1002,medium,Invoice mismatch for Q2,investigating,2026-06-09
+T-903,C1003,high,Shipment ETA webhook retries,mitigated,2026-06-13

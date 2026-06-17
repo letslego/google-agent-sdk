@@ -1,0 +1,11 @@
+FAQ: Claim API latency
+- If latency exceeds 500ms p95 for over 15 minutes, classify as P1 for enterprise customers.
+- Recommended mitigation sequence: enable cache warmup, scale workers, and route to nearest healthy region.
+
+FAQ: Invoice mismatch
+- Reconcile usage snapshots from billing warehouse before issuing corrected invoice.
+- For EMEA accounts, include VAT adjustment note in customer response.
+
+FAQ: Webhook retries
+- Validate endpoint health and signature verification.
+- Retry policy: exponential backoff up to 8 attempts over 20 minutes.
