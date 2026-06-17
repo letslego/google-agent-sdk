@@ -31,6 +31,7 @@ When a customer asks a question, the system:
 - Skills registry search for intent-to-playbook matching (`search_skill_registry`)
 - Explicit skill execution for response workflow control (`use_skill`)
 - ADK tool-based grounding pattern (`retrieve_enterprise_context`)
+- Web UI with tabs for RAG, traces, and evals
 - FastAPI retrieval endpoint for service integration
 - Sample datasets for immediate local demo
 - Architecture documentation and Makefile automation
@@ -112,6 +113,14 @@ curl -X POST http://127.0.0.1:8000/retrieve \
   }'
 ```
 
+### 6) Run the UI (RAG + Traces + Evals tabs)
+
+```bash
+make run-ui
+```
+
+Then open the Streamlit URL shown in your terminal (typically `http://localhost:8501`).
+
 ## Example Customer Queries
 
 - "My Claim API is slow for Acme Health. What support policy applies and what are the required update intervals?"
@@ -142,6 +151,12 @@ Tool -> use_skill("sla_incident_response") => incident response playbook
 Tool -> retrieve_enterprise_context(query, customer_id="C1001") => ticket + policy context
 Agent: grounded answer with [1], [2] citations and concrete next actions
 ```
+
+## UI Tabs
+
+- **RAG**: submit a customer query, view grounded answer, retrieved context, and trace payload
+- **Traces**: inspect recent end-to-end execution traces (skill selected, steps, latency, sources)
+- **Evals**: run benchmark cases from `data/evals/eval_cases.json` and view pass rate/latency
 
 ## Extending to Real Enterprise Data
 

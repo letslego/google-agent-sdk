@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: venv install ingest run-api run-adk lint test
+.PHONY: venv install ingest run-api run-adk run-ui lint test
 
 venv:
 	$(PYTHON) -m venv .venv
@@ -16,6 +16,9 @@ run-api:
 
 run-adk:
 	. .venv/bin/activate && adk run src/enterprise_rag/adk_agent
+
+run-ui:
+	. .venv/bin/activate && streamlit run src/enterprise_rag/ui.py
 
 lint:
 	. .venv/bin/activate && ruff check src scripts

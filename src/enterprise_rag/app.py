@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from enterprise_rag.ingestion.pipeline import EnterpriseRAGPipeline
+from enterprise_rag.service import RAGService
+from enterprise_rag.tracing import read_traces
 
 
 class QueryRequest(BaseModel):
@@ -11,8 +12,7 @@ class QueryRequest(BaseModel):
 
 
 app = FastAPI(title="Enterprise RAG API", version="0.1.0")
-pipeline = EnterpriseRAGPipeline()
-pipeline.ingest()
+service = RAGService()
 
 
 @app.get("/health")
@@ -22,10 +22,29 @@ def health() -> dict[str, str]:
 
 @app.post("/retrieve")
 def retrieve(request: QueryRequest) -> dict[str, str]:
-    context = pipeline.retrieve_context(
+    response = service.answer_query(
         query=request.query,
         customer_id=request.customer_id,
         top_k=request.top_k,
     )
-    return {"context": context}
+    return {"context": response.context}
+
+
+@app.post("/query")
+def query(request: QueryRequest) -> dict:
+    response = service.answer_query(
+        query=request.query,
+        customer_id=request.customer_id,
+        top_k=request.top_k,
+    )
+    return {
+        "answer": response.answer,
+        "context": response.context,
+        "trace": response.trace,
+    }
+
+
+@app.get("/traces")
+def traces(limit: int = 50) -> dict[str, list[dict]]:
+    return {"items": read_traces(limit=limit)}
 

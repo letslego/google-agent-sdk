@@ -1,0 +1,26 @@
+[
+  {
+    "case_id": "SLA-001",
+    "query": "Acme Health says Claim API latency violates SLA. What should support do?",
+    "customer_id": "C1001",
+    "top_k": 5,
+    "expected_keywords": ["sla", "latency", "incident", "customer status"],
+    "min_keyword_hit_rate": 0.5
+  },
+  {
+    "case_id": "BILL-001",
+    "query": "How should we handle Vertex Retail invoice mismatch in EMEA?",
+    "customer_id": "C1002",
+    "top_k": 5,
+    "expected_keywords": ["invoice", "billing", "vat", "reconcile"],
+    "min_keyword_hit_rate": 0.5
+  },
+  {
+    "case_id": "WEBHOOK-001",
+    "query": "Nimbus Logistics has webhook retry failures. What playbook applies?",
+    "customer_id": "C1003",
+    "top_k": 5,
+    "expected_keywords": ["webhook", "retry", "delivery", "signature"],
+    "min_keyword_hit_rate": 0.5
+  }
+]
