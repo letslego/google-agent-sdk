@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import argparse
 from datetime import UTC, datetime
 from pathlib import Path
 import json
+import sys
 
+from enterprise_rag.config import settings
 from enterprise_rag.evals import load_eval_cases
 from enterprise_rag.service import RAGService
 
@@ -43,7 +46,25 @@ def _compute_groundedness(answer: str, context: str) -> tuple[float, bool, dict]
     return round(score, 2), passed, {"supported_lines": supported, "total_lines": total}
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run groundedness pass/fail evaluation.")
+    parser.add_argument(
+        "--min-pass-rate",
+        type=float,
+        default=settings.groundedness_min_pass_rate,
+        help="Minimum pass rate required for success exit code.",
+    )
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=str(OUTPUT_PATH),
+        help="Path to write JSON evaluation output.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = _parse_args()
     service = RAGService()
     cases = load_eval_cases()
     results = []
@@ -77,6 +98,7 @@ def main() -> None:
 
     summary = {
         "evaluated_at_utc": datetime.now(UTC).isoformat(),
+        "min_required_pass_rate": args.min_pass_rate,
         "total_cases": len(results),
         "pass_count": sum(1 for r in results if r["grounded_pass"]),
         "pass_rate": round(
@@ -86,9 +108,18 @@ def main() -> None:
         "results": results,
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    print(f"\nGroundedness evaluation written to {OUTPUT_PATH}")
+    output_path = Path(args.output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    print(f"\nGroundedness evaluation written to {output_path}")
+
+    if summary["pass_rate"] < args.min_pass_rate:
+        print(
+            f"FAILED: pass_rate {summary['pass_rate']:.2f} is below required {args.min_pass_rate:.2f}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    print(f"PASSED: pass_rate {summary['pass_rate']:.2f} >= required {args.min_pass_rate:.2f}")
 
 
 if __name__ == "__main__":

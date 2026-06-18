@@ -12,8 +12,10 @@ Repository: [https://github.com/letslego/google-agent-sdk](https://github.com/le
 ## Latest Updates
 
 - Added enterprise warehouse ingestion via a configurable BigQuery connector.
-- Added optional Vertex AI embedding-based reranking for improved relevance ordering.
+- Added BigQuery partition filters and incremental ingestion checkpoints.
+- Added optional Vertex AI cross-encoder reranking with calibrated relevance thresholds.
 - Added groundedness evaluation with pass/fail checks and JSON report output.
+- Added CI automation that fails PRs when groundedness pass rate drops below threshold.
 - Expanded UI showcase with live screenshots for RAG, Traces, and Evals tabs.
 
 ## What This RAG Pipeline Does
@@ -101,6 +103,8 @@ RAG_ENABLE_BIGQUERY_INGESTION=true
 GCP_PROJECT_ID=your-project-id
 BIGQUERY_DATASET=support_analytics
 BIGQUERY_TABLES=tickets,accounts,billing_events
+BIGQUERY_PARTITION_COLUMN=event_date
+BIGQUERY_USE_INCREMENTAL_CHECKPOINT=true
 ```
 
 ### 4) Run the ADK agent
@@ -199,20 +203,37 @@ GCP_PROJECT_ID=your-project-id
 BIGQUERY_DATASET=your_dataset
 BIGQUERY_TABLES=tickets,accounts
 BIGQUERY_LIMIT_PER_TABLE=500
+BIGQUERY_PARTITION_COLUMN=event_date
+BIGQUERY_PARTITION_START=2026-01-01
+BIGQUERY_PARTITION_END=2026-12-31
+BIGQUERY_USE_INCREMENTAL_CHECKPOINT=true
+BIGQUERY_CHECKPOINT_PATH=./logs/bq_ingestion_checkpoint.json
 ```
 
-## Vertex AI Reranking
+Checkpoint behavior:
 
-Optional reranking can be enabled to rescore retrieved candidates with Vertex embeddings:
+- On each successful ingestion, the latest partition value per table is written to the checkpoint file.
+- Next ingestion run automatically resumes from the last checkpoint (`partition_column > last_checkpoint`).
+- You can disable checkpointing by setting `BIGQUERY_USE_INCREMENTAL_CHECKPOINT=false`.
+
+## Vertex AI Cross-Encoder Reranking
+
+Optional reranking can be enabled to rescore retrieved candidates with a Vertex cross-encoder prompt:
 
 ```bash
 RAG_ENABLE_VERTEX_RERANK=true
 GCP_PROJECT_ID=your-project-id
 GCP_LOCATION=us-central1
-VERTEX_EMBEDDING_MODEL=text-embedding-005
+VERTEX_RERANK_MODEL=gemini-2.5-flash
+VERTEX_RERANK_MIN_SCORE=0.45
+VERTEX_RERANK_HIGH_CONFIDENCE_SCORE=0.80
 ```
 
-When enabled, the retriever keeps hybrid retrieval as first-pass recall, then reranks top candidates for better ordering relevance.
+Calibration behavior:
+
+- `VERTEX_RERANK_MIN_SCORE`: documents below this threshold are filtered out.
+- `VERTEX_RERANK_HIGH_CONFIDENCE_SCORE`: boosts high-confidence documents during final ranking.
+- If all candidates fall below threshold, the system gracefully falls back to hybrid ranking.
 
 ## Groundedness Evaluation Script
 
@@ -225,6 +246,16 @@ Output includes:
 - selected skill and trace id
 - latency per case
 - global pass rate summary
+
+CI usage:
+
+- Local fail-on-threshold:
+
+```bash
+python scripts/evaluate_groundedness.py --min-pass-rate 0.70
+```
+
+- PR gate: `.github/workflows/groundedness-gate.yml` runs this check on pull requests and fails CI if pass rate drops below `GROUNDEDNESS_MIN_PASS_RATE`.
 
 ## Example Customer Queries
 

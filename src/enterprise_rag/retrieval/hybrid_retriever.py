@@ -25,12 +25,14 @@ class HybridRetriever:
         if not settings.gcp_project_id:
             return None
         try:
-            from enterprise_rag.retrieval.vertex_reranker import VertexReranker
+            from enterprise_rag.retrieval.vertex_reranker import VertexCrossEncoderReranker
 
-            self._vertex_reranker = VertexReranker(
+            self._vertex_reranker = VertexCrossEncoderReranker(
                 project_id=settings.gcp_project_id,
                 location=settings.gcp_location,
-                model_name=settings.vertex_embedding_model,
+                model_name=settings.vertex_rerank_model,
+                min_score=settings.vertex_rerank_min_score,
+                high_confidence_score=settings.vertex_rerank_high_confidence_score,
             )
         except Exception:
             self._vertex_reranker = None

@@ -28,6 +28,11 @@ class EnterpriseRAGPipeline:
                     dataset=settings.bigquery_dataset,
                     tables=tables,
                     limit_per_table=settings.bigquery_limit_per_table,
+                    partition_column=settings.bigquery_partition_column,
+                    partition_start=settings.bigquery_partition_start,
+                    partition_end=settings.bigquery_partition_end,
+                    use_incremental_checkpoint=settings.bigquery_use_incremental_checkpoint,
+                    checkpoint_path=settings.bigquery_checkpoint_path,
                 )
             except Exception:
                 # Keep local demos healthy even when BigQuery is not configured.

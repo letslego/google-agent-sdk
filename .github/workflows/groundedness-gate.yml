@@ -1,0 +1,39 @@
+name: Groundedness Gate
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  groundedness-check:
+    runs-on: ubuntu-latest
+    env:
+      RAG_ENABLE_VECTOR_SEARCH: "false"
+      RAG_ENABLE_VERTEX_RERANK: "false"
+      RAG_ENABLE_BIGQUERY_INGESTION: "false"
+      GROUNDEDNESS_MIN_PASS_RATE: "0.67"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run groundedness gate
+        run: |
+          python scripts/evaluate_groundedness.py --min-pass-rate "${GROUNDEDNESS_MIN_PASS_RATE}"
+
+      - name: Upload groundedness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: groundedness-eval-report
+          path: logs/groundedness_eval_results.json
